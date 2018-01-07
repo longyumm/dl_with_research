@@ -1,0 +1,5 @@
+if dataset.isdigit():
+	  metrics_a.append(dataset)
+else:
+		i=single.replace(dataset,'0')
+		data_a.append(i)
