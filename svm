@@ -1,0 +1,34 @@
+from sklearn import svm
+import numpy as np
+import pylab as plt
+
+
+x = [[0,1],[1,2],[-1,2],[0,-1],[-1,-2],[-2,0]] 
+y = [0,0,0,1,1,1] #分类标记 
+  
+clf = svm.SVC(kernel='linear') 
+clf.fit(x,y) 
+
+w = clf.coef_[0] #获取w 
+a = -w[0]/w[1] #斜率 
+b = clf.support_vectors_[0]# 截距
+
+#dividing line=ax+b
+
+print("W:",w) 
+print("a:",a)
+print("b:",b)
+
+lx=np.array(x)
+ly=np.array(y)
+
+plt.scatter(lx[:,0],lx[:,1],c=ly) 
+
+xx = np.linspace(-3, 3)
+#直线方程
+yy = a * xx - (clf.intercept_[0]) / w[1]
+
+plt.plot(xx, yy, 'k-')
+
+
+plt.show()
