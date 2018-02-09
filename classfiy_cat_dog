@@ -1,0 +1,124 @@
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import h5py
+import numpy as np
+import torch.utils.data as Data
+import matplotlib.pyplot as plt
+
+
+torch.manual_seed(1)
+
+dog=h5py.File('dog_s.h5','r')
+dog.keys()
+d=dog['data'][:]
+
+
+cat=h5py.File('cat_s.h5','r')
+cat.keys()
+c=cat['data'][:]
+
+print(d.shape)
+print(c.shape)
+	
+##			 label 			##
+
+cx=d.reshape((10,1920000))
+dx=c.reshape((10,1920000))
+
+
+la_d=np.ones([10,1])
+la_c=np.zeros([10,1])
+
+data_dog=np.hstack((dx,la_d))
+data_cat=np.hstack((cx,la_c))
+
+#print(data_dog.shape)
+
+data=np.vstack((data_dog,data_cat))
+np.random.shuffle(data)
+
+tra_m=data[:,:-1].reshape((20,800,800,3))
+
+tra_x=tra_m.transpose(0,3,1,2)
+tra_y=data[:,-1]
+
+train_x=torch.FloatTensor(tra_x)
+train_y=torch.LongTensor(tra_y)
+
+
+
+Epoch=2
+Batch_size=15
+
+
+torch_dataset=Data.TensorDataset(data_tensor=train_x,target_tensor=train_y)
+
+loader=Data.DataLoader(dataset=torch_dataset,batch_size=Batch_size,shuffle=True)
+
+
+#print(tra_y)
+	
+##    		  CNN   	     ##
+
+
+
+
+
+
+class CNN(nn.Module):
+	def __init__(self):
+		super(CNN,self).__init__()
+		#input 3x800x800
+		self.conv1=nn.Sequential(nn.Conv2d(in_channels=3,out_channels=48,kernel_size=6,stride=2),nn.ReLU(),nn.MaxPool2d(kernel_size=2))
+		#output 48x199x199
+		self.conv2=nn.Sequential(nn.Conv2d(48,100,5,2,padding=1),nn.ReLU(),nn.MaxPool2d(kernel_size=2))
+		#output 100x50x50
+		self.conv3=nn.Sequential(nn.Conv2d(100,200,4,2),nn.ReLU(),nn.MaxPool2d(kernel_size=2))
+		#output 200x12x12
+		self.out=nn.Linear(200*11*11,2)
+
+	def forward(self,x):
+		x=self.conv1(x)
+		x=self.conv2(x)
+		x=self.conv3(x)
+		x=x.view(x.size(0),-1)
+		output=self.out(x)
+		return output,x
+
+cnn=CNN()
+#cnn.double()
+print(cnn)
+
+optimizer=torch.optim.Adam(cnn.parameters(),lr=0.01)
+loss_func=nn.CrossEntropyLoss()
+
+##   		training  		##
+
+for epoch in range(Epoch):
+	train_loss=0
+	train_acc=0
+	for step,(batch_x,batch_y) in enumerate(loader):
+		#print(type(batch_x))
+		x_t=Variable(batch_x)
+		y_t=Variable(batch_y)
+
+		output=cnn(x_t)[0]
+		loss=loss_func(output,y_t)
+
+		train_loss+=loss.data[0]
+		pred=torch.max(output,1)[1]
+		train_correct=(pred==y_t).sum()
+		train_acc+=train_correct.data[0]
+
+		optimizer.zero_grad()
+		loss.backward()
+		optimizer.step()
+
+
+	print('Epoch:',epoch,'| train loss:%.4f'%train_loss,'| train acc:%.2f'%train_acc)
+
+
+plt.ioff()
+
+
