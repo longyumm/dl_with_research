@@ -1,0 +1,3 @@
+fid = fopen('b.txt','wt');
+fprintf(fid,'%g\n',X);       # \n 换行
+fclose(fid);
